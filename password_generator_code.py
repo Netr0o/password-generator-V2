@@ -1,5 +1,9 @@
 import random
 import tkinter as tk
+from tkinter import ttk
+import sqlite3
+import pyperclip
+import time
 
 
 class MyApp:
@@ -101,7 +105,7 @@ class MainPage(tk.Frame):
         self.space_frame_perso_asso = tk.Frame(self, height=40)
         self.space_frame_perso_asso.grid(row=1, column=0)
 
-        self.associating_frame = tk.Frame(self, highlightbackground='#242323', highlightthickness=15)
+        self.associating_frame = tk.Frame(self)
         self.associating_frame.grid(row=2, column=0)
 
         self.space_frame_asso_nav = tk.Frame(self, height=40)
@@ -122,7 +126,7 @@ class MainPage(tk.Frame):
         self.space_frame1and2 = tk.Label(self.generated_pw_frame, text='    ')
         self.space_frame1and2.grid(row=1, column=1)
 
-        self.copy_password = tk.Button(self.generated_pw_frame, text='Copy the password')
+        self.copy_password = tk.Button(self.generated_pw_frame, text='Copy the password', command=self.password_clipboard)
         self.copy_password.grid(row=2, column=0)
 
         self.own_password = tk.Label(self.personal_pw_frame, text='your own password :')
@@ -167,16 +171,79 @@ class MainPage(tk.Frame):
                    '5', '6', '7', '8', '9', ' ', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
                    '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '', '{', '|', '}', '~']
         mdp = random.sample(letters, 22)
-        password = ''.join(mdp)
+        self.password = ''.join(mdp)
         with open('/home/antoine/Desktop/password_list.txt', 'a') as file:
-            file.write(password + '\n')
-        print(password)
+            file.write(self.password + '\n')
+        print(self.password)
+
+    def password_clipboard(self):
+        password = str(self.password)
+        self.controller.root.clipboard_clear()  # Clear clipboard
+        self.controller.root.clipboard_append(password)  # Copy password
+        self.controller.root.update()  # Required to make it work
+        print('Password copied!')
+
+# class DataBaseHandler:
+#     def __init__(self, db_name='password_db.db'):
+#         self.conn = sqlite3.connect(db_name)
+#         self.cursor = self.conn.cursor()
+#         self.create_tables()
+#
+#     def tables_creation(self):
+#         self.cursor.execute(
+#             '''CREATE TABLE IF NOT EXISTS password_table (
+#             id INTEGER PRIMARY KEY AUTOINCREMENT,
+#             name TEXT,
+#             password TEXT
+#             );
+#         ''')
+#
+#         self.conn.commit()
+#
+#     def save_password(self, name, password):
+#         query = f'''INSERT INTO password_table (name, password)
+#             VALUES (?, ?)'''
+#         self.cursor.execute(query, (name, password))
+#         self.conn.commit()
+#
+#     def get_password(self):
+#         query = f'''SELECT name, password FROM password_table'''
+#         self.cursor.execute(query)
+#         return self.cursor.fetchall()
+#
+#     def close(self):
+#         self.conn.close()
 
 class SecondPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
-        self.page_change = tk.Button(self, text='see password list', command=lambda: controller.show_frame('MainPage'))
-        self.page_change.grid(row=2, column=0)
+
+        self.controller = controller
+
+        self.table_frame = tk.Frame(self, width=450, highlightbackground='blue', highlightthickness=2)
+        self.table_frame.grid(row=0, column=0)
+
+        self.nav_and_theme_frame = tk.Frame(self)
+        self.nav_and_theme_frame.grid(row=1, column=0)
+
+        self.names = ['google', 'github', 'spotify', 'instagram', 'chatGPT', 'supercell']
+        self.password = [1, 2, 3, 4, 5, 6]
+
+        self.table = ttk.Treeview(self.table_frame, columns=('first', 'last'), show= 'headings')
+        self.table.heading('first', text='names')
+        self.table.heading('last', text='password')
+        self.table.grid(row=0, column=0, sticky = 'nsew')
+        for i in range(len(self.names)):
+            i = -1-i
+            self.name_list = self.names[i]
+            self.password_list = self.password[i]
+            self.table.insert(parent = '', index = 0, values = (self.name_list, self.password_list))
+
+        self.page_change = tk.Button(self.nav_and_theme_frame, text='see password list', command=lambda: controller.show_frame('MainPage'))
+        self.page_change.grid(row=1, column=0)
+
+        self.switch_button = tk.Button(self.nav_and_theme_frame, text='Dark theme',command=self.controller.switch)
+        self.switch_button.grid(row=2, column=0)
 
 
 root = tk.Tk()
