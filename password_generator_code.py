@@ -2,8 +2,7 @@ import random
 import tkinter as tk
 from tkinter import ttk
 import sqlite3
-import pyperclip
-import time
+from tkinter import messagebox
 
 
 class MyApp:
@@ -52,6 +51,9 @@ class MyApp:
         frame = self.frames[page_name]
         frame.tkraise()
 
+        if page_name == 'SecondPage':
+            frame.update_table()
+
     #function that apply the theme
     def apply_theme(self, theme):
         self.root.config(bg=theme['bg'])
@@ -89,6 +91,9 @@ class MainPage(tk.Frame):
         super().__init__(parent)
 
         self.controller = controller
+        self.db = DataBaseHandler()
+
+        self.password = ''
 
         #biggest frame (inside MainPage frame)
         self.container = tk.Frame(self)
@@ -129,14 +134,14 @@ class MainPage(tk.Frame):
         self.copy_password = tk.Button(self.generated_pw_frame, text='Copy the password', command=self.password_clipboard)
         self.copy_password.grid(row=2, column=0)
 
-        self.own_password = tk.Label(self.personal_pw_frame, text='your own password :')
-        self.own_password.grid(row=0, column=0)
-
-        self.name_entry = tk.Entry(self.personal_pw_frame, width=7)
-        self.name_entry.grid(row=1, column=0) #entry name
-
-        self.save_own_pw_button = tk.Button(self.personal_pw_frame, text='Save')
-        self.save_own_pw_button.grid(row=2, column=0) #button save
+        # self.own_password = tk.Label(self.personal_pw_frame, text='your own password :')
+        # self.own_password.grid(row=0, column=0)
+        #
+        # self.own_password_entry = tk.Entry(self.personal_pw_frame, width=7)
+        # self.own_password_entry.grid(row=1, column=0) #entry own password
+        #
+        # self.save_own_pw_button = tk.Button(self.personal_pw_frame, text='Save', command= self.manual_password_function)
+        # self.save_own_pw_button.grid(row=2, column=0) #button save
 
         self.associate = tk.Label(self.associating_frame, text='associate with :')
         self.associate.grid(row=0, column=0)
@@ -147,12 +152,8 @@ class MainPage(tk.Frame):
         self.space1 = tk.Label(self.associating_frame, text=' ')
         self.space1.grid(row=0, column=2)
 
-        self.associate_button = tk.Button(self.associating_frame, text='Associate')
+        self.associate_button = tk.Button(self.associating_frame, text='Associate', command=self.save_password)
         self.associate_button.grid(row=0, column=3) # button to associate a password to the website or login where it is used
-
-
-
-
 
         # two lonely buttons at the bottom :(
         self.page_change = tk.Button(self.nav_and_theme_frame, text='see password list', command=lambda: controller.show_frame('SecondPage'))
@@ -164,18 +165,32 @@ class MainPage(tk.Frame):
     def update_button_text(self, text):
         self.switch_button.config(text=text) # function to update the text of the switch theme button
 
+
+    #function that generate a password randomly
     def generator(self):
         letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
                    't','u','v','w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
                    'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4',
                    '5', '6', '7', '8', '9', ' ', '!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-',
                    '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '', '{', '|', '}', '~']
-        mdp = random.sample(letters, 22)
-        self.password = ''.join(mdp)
-        with open('/home/antoine/Desktop/password_list.txt', 'a') as file:
-            file.write(self.password + '\n')
+        self.password = ''.join(random.sample(letters, 22))
         print(self.password)
 
+    # def manual_password_function(self):   #function to set the type of the password entered by the user
+    #     if self.generated_password_type:
+    #         return
+    #     self.password = self.own_password_entry.get().strip()
+    #
+    #     if not self.password:
+    #         messagebox.showerror("Error", "Please enter a password!")
+    #         return
+    #
+    #     self.manual_password_type = True
+    #     self.generated_password_type = False
+    #     print(self.password)
+
+
+    # function to cpy the password to the clipboard to be used after
     def password_clipboard(self):
         password = str(self.password)
         self.controller.root.clipboard_clear()  # Clear clipboard
@@ -183,36 +198,51 @@ class MainPage(tk.Frame):
         self.controller.root.update()  # Required to make it work
         print('Password copied!')
 
-# class DataBaseHandler:
-#     def __init__(self, db_name='password_db.db'):
-#         self.conn = sqlite3.connect(db_name)
-#         self.cursor = self.conn.cursor()
-#         self.create_tables()
-#
-#     def tables_creation(self):
-#         self.cursor.execute(
-#             '''CREATE TABLE IF NOT EXISTS password_table (
-#             id INTEGER PRIMARY KEY AUTOINCREMENT,
-#             name TEXT,
-#             password TEXT
-#             );
-#         ''')
-#
-#         self.conn.commit()
-#
-#     def save_password(self, name, password):
-#         query = f'''INSERT INTO password_table (name, password)
-#             VALUES (?, ?)'''
-#         self.cursor.execute(query, (name, password))
-#         self.conn.commit()
-#
-#     def get_password(self):
-#         query = f'''SELECT name, password FROM password_table'''
-#         self.cursor.execute(query)
-#         return self.cursor.fetchall()
-#
-#     def close(self):
-#         self.conn.close()
+
+    def save_password(self): #function to save the password in the database
+        name = self.associate_entry.get().strip()
+
+        if not name:
+            messagebox.showerror("Error", "Please enter a name to associate with the password!")
+            return
+
+        if not self.password:
+            messagebox.showerror("Error", "No password to save!")
+            return
+
+        self.db.save_password(name, self.password)
+        messagebox.showinfo("Success", f"Password saved for {name}!")
+
+class DataBaseHandler:
+    def __init__(self, db_name='password_db.db'):
+        self.conn = sqlite3.connect(db_name)
+        self.cursor = self.conn.cursor()
+        self.create_tables()
+
+    def create_tables(self):
+        self.cursor.execute(
+            '''CREATE TABLE IF NOT EXISTS password_table (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            password TEXT
+            );
+        ''')
+
+        self.conn.commit()
+
+    def save_password(self, name, password):
+        query = f'''INSERT INTO password_table (name, password)
+            VALUES (?, ?)'''
+        self.cursor.execute(query, (name, password))
+        self.conn.commit()
+
+    def get_password(self):
+        query = f'''SELECT name, password FROM password_table'''
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+    def close(self):
+        self.conn.close()
 
 class SecondPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -226,24 +256,32 @@ class SecondPage(tk.Frame):
         self.nav_and_theme_frame = tk.Frame(self)
         self.nav_and_theme_frame.grid(row=1, column=0)
 
-        self.names = ['google', 'github', 'spotify', 'instagram', 'chatGPT', 'supercell']
-        self.password = [1, 2, 3, 4, 5, 6]
-
         self.table = ttk.Treeview(self.table_frame, columns=('first', 'last'), show= 'headings')
         self.table.heading('first', text='names')
         self.table.heading('last', text='password')
         self.table.grid(row=0, column=0, sticky = 'nsew')
-        for i in range(len(self.names)):
-            i = -1-i
-            self.name_list = self.names[i]
-            self.password_list = self.password[i]
-            self.table.insert(parent = '', index = 0, values = (self.name_list, self.password_list))
 
         self.page_change = tk.Button(self.nav_and_theme_frame, text='see password list', command=lambda: controller.show_frame('MainPage'))
         self.page_change.grid(row=1, column=0)
 
         self.switch_button = tk.Button(self.nav_and_theme_frame, text='Dark theme',command=self.controller.switch)
         self.switch_button.grid(row=2, column=0)
+
+    def update_table(self):
+        db = DataBaseHandler()
+        passwords = db.get_password()
+        db.close()
+
+        for item in self.table.get_children():
+            self.table.delete(item)
+
+        # Add new data to the table
+        for name, password in passwords:
+            self.table.insert('', 'end', values=(name, password))
+
+
+
+
 
 
 root = tk.Tk()
