@@ -1,4 +1,4 @@
-# password-generator
+# password-generator V2
 Password generator :
 - Press to create a new password
 - You can associate each password a name (eg: google, spotify...)
